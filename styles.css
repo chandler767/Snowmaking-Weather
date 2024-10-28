@@ -1,7 +1,8 @@
+/* Base styling */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    background-color: white;
+    background: linear-gradient(to bottom, #a2c9ff, #ffffff) no-repeat fixed;
     color: #333;
 }
 
@@ -9,6 +10,15 @@ body {
     max-width: 600px;
     margin: auto;
     padding: 1em;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+}
+
+/* Winter theme */
+header h1 {
+    text-align: center;
+    color: #0a5396;
 }
 
 header {
@@ -22,6 +32,16 @@ header {
     position: relative;
     display: flex;
     gap: 0.5em;
+}
+
+#locationInput, #locationBtn, #submitBtn {
+    padding: 0.6em;
+    border-radius: 5px;
+    border: 1px solid #0a5396;
+}
+
+#locationInput {
+    width: 70%;
 }
 
 #suggestions {
@@ -55,13 +75,14 @@ header {
     display: flex;
     align-items: center;
     cursor: pointer;
+    color: #0a5396;
 }
 
 .unit-switch input {
     appearance: none;
     width: 40px;
     height: 20px;
-    background: #ccc;
+    background: #ddd;
     border-radius: 20px;
     position: relative;
     outline: none;
@@ -87,3 +108,101 @@ header {
 .unit-switch input:checked::before {
     transform: translateX(20px);
 }
+
+/* Snowflake Animation */
+body:before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: url('snowflake.png') repeat;
+    animation: snowfall 15s linear infinite;
+    opacity: 0.5;
+}
+
+@keyframes snowfall {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+/* Error message banner */
+.error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #d9534f;
+    color: white;
+    text-align: center;
+    padding: 1em;
+    font-weight: bold;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: slideDown 0.5s ease;
+}
+
+@keyframes slideDown {
+    from { top: -50px; }
+    to { top: 0; }
+}
+
+/* Card styling for sections */
+.card {
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 1px solid #ddd;
+    padding: 1em;
+    border-radius: 8px;
+    margin: 1em 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#snowQualityGauge {
+    text-align: center;
+    margin-top: 1em;
+    color: #0a5396;
+}
+
+#snowIndicator {
+    font-size: 2em;
+    color: lightgray;
+}
+
+.light-blue { background-color: #add8e6; }
+.dark-blue { background-color: #00008b; }
+.red { background-color: #ffcccb; }
+
+
+/* Gauge styling */
+.gauge {
+    text-align: center;
+    margin-top: 1em;
+}
+
+.circular-gauge {
+    transform: rotate(-90deg); /* Rotate to start gauge from top */
+}
+
+.gauge-bg {
+    fill: none;
+    stroke: #e6e6e6;
+    stroke-width: 3;
+}
+
+.gauge-value {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke 0.3s, stroke-dasharray 0.3s;
+}
+
+.gauge-text {
+    font-size: 0.6em;
+    fill: #333;
+}
+
+.too-warm { stroke: #ff6347; }     /* Red for "Too Warm" */
+.good { stroke: #ffd700; }         /* Yellow for "Good" */
+.excellent { stroke: #4caf50; }    /* Green for "Excellent" */

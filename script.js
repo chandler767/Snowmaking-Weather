@@ -1,4 +1,4 @@
-const API_KEY = '93884a8e001a81fd2dc1b978e4980a43'; // Replace with your OpenWeatherMap API key
+const API_KEY = 'fe0b1cebb2160fae8dbd661aaebb923b'; // Replace with your OpenWeatherMap API key
 
 document.getElementById('locationBtn').addEventListener('click', fetchWeatherByLocation);
 document.getElementById('submitBtn').addEventListener('click', submitLocation);
@@ -7,11 +7,20 @@ document.getElementById('locationInput').addEventListener('input', fetchLocation
 
 let isCelsius = false;
 
+// Constants for snow quality thresholds and gauge percentages
+const EXCELLENT_THRESHOLD = 21;
+const GOOD_THRESHOLD = 28;
+const EXCELLENT_GAUGE_PERCENTAGE = 100;
+const GOOD_GAUGE_PERCENTAGE = 70;
+const TOO_WARM_GAUGE_PERCENTAGE = 30;
+
 // Display an error message to the user
 function displayError(message) {
-    const errorContainer = document.createElement('p');
+    const errorContainer = document.createElement('div');
     errorContainer.textContent = message;
     errorContainer.className = 'error-message';
+    
+    // Append and automatically remove after 5 seconds
     document.body.prepend(errorContainer);
     setTimeout(() => errorContainer.remove(), 5000);
 }
@@ -42,8 +51,8 @@ async function submitLocation() {
     try {
         const data = await fetchGeoLocation(location);
         if (data.length > 0) {
-            const { lat, lon, name } = data[0];
-            document.getElementById('locationInput').value = name; // Autofill with selected location
+            const { lat, lon, name, state, country } = data[0];
+            document.getElementById('locationInput').value = `${name}, ${state || ''}, ${country}`; // Autofill with selected location
             await fetchWeatherData(lat, lon);
         } else {
             displayError("Location not found. Please enter a valid location.");
@@ -65,10 +74,11 @@ async function fetchLocationSuggestions() {
         const suggestionsList = document.getElementById('suggestions');
         suggestionsList.innerHTML = '';
         data.forEach(location => {
+            const locationName = `${location.name}, ${location.state || ''}, ${location.country}`;
             const suggestionItem = document.createElement('li');
-            suggestionItem.textContent = location.name;
+            suggestionItem.textContent = locationName;
             suggestionItem.addEventListener('click', () => {
-                document.getElementById('locationInput').value = location.name;
+                document.getElementById('locationInput').value = locationName;
                 suggestionsList.innerHTML = '';
             });
             suggestionsList.appendChild(suggestionItem);
@@ -100,7 +110,8 @@ async function fetchNearestCity(lat, lon) {
         
         const data = await response.json();
         if (data.length > 0) {
-            document.getElementById('locationInput').value = data[0].name;
+            const { name, state, country } = data[0];
+            document.getElementById('locationInput').value = `${name}, ${state || ''}, ${country}`;
         } else {
             displayError("Unable to find nearest city.");
         }
@@ -145,4 +156,109 @@ function toggleUnits() {
     if (location) {
         submitLocation(); // Re-fetch data for the current location
     }
+}
+
+function updateCurrentConditions(current) {
+    const temp = current.temp;
+    const humidity = current.humidity;
+    const wetBulb = calculateWetBulb(temp, humidity);
+
+    document.getElementById('temp').textContent = `${temp.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
+    document.getElementById('humidity').textContent = `${humidity}%`;
+    document.getElementById('wetBulb').textContent = `${wetBulb.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
+
+    updateSnowQuality(wetBulb);
+}
+
+function updateSnowQuality(wetBulb) {
+    const snowQualityElement = document.getElementById('quality');
+    const gaugeValue = document.querySelector('.gauge-value');
+    const gaugeText = document.querySelector('.gauge-text');
+    const snowIndicator = document.getElementById('snowIndicator');
+
+    const { snowQuality, gaugeClass, gaugePercentage } = determineSnowQuality(wetBulb);
+
+    updateGauge(gaugeClass, gaugePercentage);
+    updateSnowQualityDisplay(snowQuality, wetBulb);
+}
+
+// Function to determine snow quality based on wet bulb temperature
+function determineSnowQuality(wetBulb) {
+    let snowQuality, gaugeClass, gaugePercentage;
+
+    if (wetBulb < EXCELLENT_THRESHOLD) {
+        snowQuality = "Excellent";
+        gaugeClass = "excellent";
+        gaugePercentage = EXCELLENT_GAUGE_PERCENTAGE;
+    } else if (wetBulb < GOOD_THRESHOLD) {
+        snowQuality = "Good";
+        gaugeClass = "good";
+        gaugePercentage = GOOD_GAUGE_PERCENTAGE;
+    } else {
+        snowQuality = "Too Warm";
+        gaugeClass = "too-warm";
+        gaugePercentage = TOO_WARM_GAUGE_PERCENTAGE;
+    }
+
+    return { snowQuality, gaugeClass, gaugePercentage };
+}
+
+// Function to update the gauge display
+function updateGauge(gaugeClass, gaugePercentage) {
+    const gaugeValue = document.querySelector('.gauge-value');
+    const gaugeText = document.querySelector('.gauge-text');
+    gaugeValue.className = `gauge-value ${gaugeClass}`;
+    gaugeValue.style.strokeDasharray = `${gaugePercentage} 100`;
+    gaugeText.textContent = `${gaugePercentage}%`;
+}
+
+// Function to update the snow quality display
+function updateSnowQualityDisplay(snowQuality, wetBulb) {
+    const snowQualityElement = document.getElementById('quality');
+    const snowIndicator = document.getElementById('snowIndicator');
+    snowQualityElement.textContent = snowQuality;
+    if (wetBulb < GOOD_THRESHOLD) {
+        snowIndicator.textContent = '❄️'; // Snowflake icon for possible snowmaking
+    } else {
+        snowIndicator.textContent = `${(wetBulb - GOOD_THRESHOLD).toFixed(1)}° Too Warm`;
+    }
+}
+
+// Function to calculate the wet bulb temperature
+function calculateWetBulb(temp, humidity) {
+    if (typeof temp !== 'number' || typeof humidity !== 'number' || temp < 0 || humidity < 0 || humidity > 100) {
+        throw new Error('Invalid input: Temperature and humidity must be numbers, and humidity must be between 0 and 100.');
+    }
+
+    // Simple formula for Wet Bulb approximation
+    return temp * Math.atan(0.151977 * Math.sqrt(humidity + 8.313659)) + Math.atan(temp + humidity) - Math.atan(humidity - 1.676331) + 0.00391838 * Math.pow(humidity, 1.5) * Math.atan(0.023101 * humidity) - 4.686035;
+}
+
+function updateForecast(daily) {
+    const forecastContainer = document.getElementById('forecastContainer');
+    forecastContainer.innerHTML = '';
+
+    daily.slice(0, 7).forEach(day => {
+        const dayEl = document.createElement('div');
+        const highTemp = day.temp.max;
+        const lowTemp = day.temp.min;
+        const wetBulb = calculateWetBulb((highTemp + lowTemp) / 2, day.humidity);
+        const tooWarm = wetBulb >= 28;
+
+        dayEl.className = tooWarm ? 'red' : wetBulb < 21 ? 'dark-blue' : 'light-blue';
+        dayEl.innerHTML = `
+            <p>${new Date(day.dt * 1000).toLocaleDateString()}</p>
+            <p>High: ${highTemp.toFixed(1)}°</p>
+            <p>Low: ${lowTemp.toFixed(1)}°</p>
+            <p>${tooWarm ? `${(wetBulb - 28).toFixed(1)}° Too Warm` : '❄️ Snowmaking'}</p>
+        `;
+        forecastContainer.appendChild(dayEl);
+    });
+}
+
+function toggleUnits() {
+    isCelsius = !isCelsius;
+    const lat = 34.0522; // Example coordinates (or use actual location data)
+    const lon = -118.2437;
+    fetchWeatherData(lat, lon);
 }
