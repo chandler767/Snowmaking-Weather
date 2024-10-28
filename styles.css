@@ -18,7 +18,7 @@ body {
 /* Winter theme */
 header h1 {
     text-align: center;
-    color: #0a5396;
+    color: #29ABE2;
 }
 
 header {
@@ -31,6 +31,7 @@ header {
 .location-input {
     position: relative;
     display: flex;
+    width: 100%;
     gap: 0.5em;
 }
 
@@ -69,6 +70,7 @@ header {
 .unit-switch {
     display: flex;
     align-items: center;
+    margin-top: 20px
 }
 
 .unit-switch label {
