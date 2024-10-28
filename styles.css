@@ -56,6 +56,7 @@ header {
     overflow-y: auto;
     background: white;
     border: 1px solid #ddd;
+    z-index: 9999;
 }
 
 #suggestions li {
