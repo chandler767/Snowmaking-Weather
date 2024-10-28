@@ -1,18 +1,16 @@
-const API_KEY = '93884a8e001a81fd2dc1b978e4980a43'; // Replace with your OpenWeatherMap API key
+const OPEN_METEO_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
+const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
 
-document.getElementById('locationBtn').addEventListener('click', fetchWeatherByLocation);
-document.getElementById('submitBtn').addEventListener('click', submitLocation);
+//document.getElementById('locationBtn').addEventListener('click', fetchWeatherByLocation);
+//document.getElementById('submitBtn').addEventListener('click', submitLocation);
 document.getElementById('unitSwitch').addEventListener('change', toggleUnits);
 document.getElementById('locationInput').addEventListener('input', fetchLocationSuggestions);
 
-let isCelsius = false;
+let isCelsius = document.getElementById('unitSwitch').checked;
 
 // Constants for snow quality thresholds and gauge percentages
 const EXCELLENT_THRESHOLD = 21;
 const GOOD_THRESHOLD = 28;
-const EXCELLENT_GAUGE_PERCENTAGE = 100;
-const GOOD_GAUGE_PERCENTAGE = 70;
-const TOO_WARM_GAUGE_PERCENTAGE = 30;
 
 // Display an error message to the user
 function displayError(message) {
@@ -25,109 +23,10 @@ function displayError(message) {
     setTimeout(() => errorContainer.remove(), 5000);
 }
 
-// Fetch weather data based on GPS location
-async function fetchWeatherByLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                await fetchNearestCity(lat, lon);
-                await fetchWeatherData(lat, lon);
-            },
-            (error) => {
-                displayError("Unable to access GPS location.");
-                console.error("Geolocation error:", error);
-            }
-        );
-    } else {
-        displayError("Geolocation is not supported by this browser.");
-    }
-}
-
-// Call fetchWeatherByLocation on page load
-window.addEventListener('load', fetchWeatherByLocation);
-
-// Fetch weather data based on location input
-async function submitLocation() {
-    const location = document.getElementById('locationInput').value;
-    try {
-        const data = await fetchGeoLocation(location);
-        if (data.length > 0) {
-            const { lat, lon, name, state, country } = data[0];
-            document.getElementById('locationInput').value = `${name}, ${state || ''}, ${country}`; // Autofill with selected location
-            await fetchWeatherData(lat, lon);
-        } else {
-            displayError("Location not found. Please enter a valid location.");
-        }
-    } catch (error) {
-        displayError("Failed to fetch location data. Please try again.");
-        console.error("Error fetching location data:", error);
-    }
-}
-
-// Fetch location suggestions for the input field
-async function fetchLocationSuggestions() {
-    const query = document.getElementById('locationInput').value;
-    if (query.length < 3) return; // Only fetch if query is longer than 2 characters
-
-    try {
-        const data = await fetchGeoLocation(query);
-
-        const suggestionsList = document.getElementById('suggestions');
-        suggestionsList.innerHTML = '';
-        data.forEach(location => {
-            const locationName = `${location.name}, ${location.state || ''}, ${location.country}`;
-            const suggestionItem = document.createElement('li');
-            suggestionItem.textContent = locationName;
-            suggestionItem.addEventListener('click', () => {
-                document.getElementById('locationInput').value = locationName;
-                suggestionsList.innerHTML = '';
-            });
-            suggestionsList.appendChild(suggestionItem);
-        });
-    } catch (error) {
-        displayError("Failed to fetch location suggestions.");
-        console.error("Error fetching location suggestions:", error);
-    }
-}
-
-// Fetch latitude and longitude based on a query using Geocoding API
-async function fetchGeoLocation(query) {
-    const response = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${API_KEY}`);
-    
-    if (!response.ok) {
-        throw new Error(`Location fetch failed: ${response.status}`);
-    }
-    return await response.json();
-}
-
-// Fetch the nearest city name based on latitude and longitude
-async function fetchNearestCity(lat, lon) {
-    try {
-        const response = await fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`);
-        
-        if (!response.ok) {
-            throw new Error(`Nearest city fetch failed: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.length > 0) {
-            const { name, state, country } = data[0];
-            document.getElementById('locationInput').value = `${name}, ${state || ''}, ${country}`;
-        } else {
-            displayError("Unable to find nearest city.");
-        }
-    } catch (error) {
-        displayError("Failed to fetch nearest city.");
-        console.error("Error fetching nearest city:", error);
-    }
-}
-
-// Fetch weather data for a given latitude and longitude
+// Fetch weather data based on latitude and longitude using Open-Meteo API
 async function fetchWeatherData(lat, lon) {
     try {
-        const response = await fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=${isCelsius ? 'metric' : 'imperial'}`);
+        const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
         
         if (!response.ok) {
             throw new Error(`Weather data fetch failed: ${response.status}`);
@@ -135,16 +34,11 @@ async function fetchWeatherData(lat, lon) {
 
         const data = await response.json();
 
-        if (data.current) {
-            updateCurrentConditions(data.current);
-        } else {
-            displayError("Current weather data is unavailable.");
-        }
-
-        if (data.daily) {
+        if (data.hourly && data.daily) {
+            updateCurrentConditions(data.hourly, data.daily);
             updateForecast(data.daily);
         } else {
-            displayError("Daily forecast data is unavailable.");
+            displayError("Weather data is unavailable.");
         }
     } catch (error) {
         displayError("Failed to fetch weather data. Please try again.");
@@ -161,58 +55,147 @@ function toggleUnits() {
     }
 }
 
-function updateCurrentConditions(current) {
-    const temp = current.temp;
-    const humidity = current.humidity;
-    const wetBulb = calculateWetBulb(temp, humidity);
+// Update Current Conditions
+function updateCurrentConditions(hourly, daily) {
+    const currentTemp = hourly.temperature_2m[new Date().getHours()]; // Get the temperature for the current hour
+    const humidity = hourly.relative_humidity_2m[new Date().getHours()];
+    const wetBulb = calculateWetBulb(currentTemp, humidity);
 
-    document.getElementById('temp').textContent = `${temp.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
+    document.getElementById('temp').textContent = `${currentTemp.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
     document.getElementById('humidity').textContent = `${humidity}%`;
     document.getElementById('wetBulb').textContent = `${wetBulb.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
 
     updateSnowQuality(wetBulb);
 }
 
+// Calculate Wet Bulb Temperature (approximation formula)
+function calculateWetBulb(temp, humidity) {
+    // Convert temperature to Celsius if it's in Fahrenheit
+    if (!isCelsius) {
+        temp = (temp - 32) * 5 / 9;
+    }
+
+    const wetBulb = temp * Math.atan(0.151977 * Math.sqrt(humidity + 8.313659)) + Math.atan(temp + humidity) - Math.atan(humidity - 1.676331) + 0.00391838 * Math.pow(humidity, 1.5) * Math.atan(0.023101 * humidity) - 4.686035;
+
+    // Convert wet bulb temperature back to Fahrenheit if needed
+    return isCelsius ? wetBulb : (wetBulb * 9 / 5) + 32;
+}
+
+// Fetch location suggestions using Nominatim API
+async function fetchLocationSuggestions() {
+    const query = document.getElementById('locationInput').value;
+    if (query.length < 3) return; // Only fetch if query is longer than 2 characters
+
+    try {
+        const response = await fetch(`${NOMINATIM_BASE_URL}?q=${query}&format=json&addressdetails=1&limit=5`);
+        if (!response.ok) throw new Error("Location suggestions fetch failed");
+
+        const data = await response.json();
+        const suggestionsList = document.getElementById('suggestions');
+        suggestionsList.innerHTML = '';
+
+        data.forEach(location => {
+            const locationName = `${location.display_name}`;
+            const suggestionItem = document.createElement('li');
+            suggestionItem.textContent = locationName;
+            suggestionItem.addEventListener('click', () => {
+                document.getElementById('locationInput').value = locationName;
+                suggestionsList.innerHTML = '';
+                fetchWeatherData(location.lat, location.lon);
+            });
+            suggestionsList.appendChild(suggestionItem);
+        });
+    } catch (error) {
+        displayError("Failed to fetch location suggestions.");
+        console.error("Error fetching location suggestions:", error);
+    }
+}
+
+// Fetch weather data based on location input using Nominatim for geocoding
+async function submitLocation() {
+    const location = document.getElementById('locationInput').value;
+    try {
+        const response = await fetch(`${NOMINATIM_BASE_URL}?q=${location}&format=json&addressdetails=1&limit=1`);
+        if (!response.ok) throw new Error("Location fetch failed");
+
+        const data = await response.json();
+        if (data.length > 0) {
+            const { lat, lon } = data[0];
+            await fetchWeatherData(lat, lon);
+        } else {
+            displayError("Location not found. Please enter a valid location.");
+        }
+    } catch (error) {
+        displayError("Failed to fetch location data. Please try again.");
+        console.error("Error fetching location data:", error);
+    }
+}
+
+// Fetch weather data based on GPS location
+async function fetchWeatherByLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            await fetchWeatherData(lat, lon);
+
+            // Fetch the nearest location name using Nominatim reverse geocoding
+            try {
+                const response = await fetch(`${NOMINATIM_BASE_URL}?q=${lat},${lon}&format=json&addressdetails=1&limit=1`);
+                if (!response.ok) throw new Error("Reverse geocoding fetch failed");
+
+                const data = await response.json();
+                if (data.length > 0) {
+                    const locationName = data[0].display_name;
+                    document.getElementById('locationInput').value = locationName;
+                } else {
+                    displayError("Unable to determine the nearest location.");
+                }
+            } catch (error) {
+                displayError("Failed to fetch the nearest location.");
+                console.error("Error fetching the nearest location:", error);
+            }
+        }, (error) => {
+            displayError("Unable to access GPS location.");
+            console.error("Geolocation error:", error);
+        });
+    } else {
+        displayError("Geolocation is not supported by this browser.");
+    }
+}
+
+// Fetch weather data based on GPS location on page load
+window.addEventListener('load', fetchWeatherByLocation);
+
 function updateSnowQuality(wetBulb) {
     const snowQualityElement = document.getElementById('quality');
-    const gaugeValue = document.querySelector('.gauge-value');
-    const gaugeText = document.querySelector('.gauge-text');
-    const snowIndicator = document.getElementById('snowIndicator');
 
-    const { snowQuality, gaugeClass, gaugePercentage } = determineSnowQuality(wetBulb);
+    const { snowQuality } = determineSnowQuality(wetBulb);
 
-    updateGauge(gaugeClass, gaugePercentage);
     updateSnowQualityDisplay(snowQuality, wetBulb);
 }
 
 // Function to determine snow quality based on wet bulb temperature
 function determineSnowQuality(wetBulb) {
-    let snowQuality, gaugeClass, gaugePercentage;
+    let snowQuality;
+    let excellentThreshold = EXCELLENT_THRESHOLD;
+    let goodThreshold = GOOD_THRESHOLD;
 
-    if (wetBulb < EXCELLENT_THRESHOLD) {
-        snowQuality = "Excellent";
-        gaugeClass = "excellent";
-        gaugePercentage = EXCELLENT_GAUGE_PERCENTAGE;
-    } else if (wetBulb < GOOD_THRESHOLD) {
-        snowQuality = "Good";
-        gaugeClass = "good";
-        gaugePercentage = GOOD_GAUGE_PERCENTAGE;
-    } else {
-        snowQuality = "Too Warm";
-        gaugeClass = "too-warm";
-        gaugePercentage = TOO_WARM_GAUGE_PERCENTAGE;
+    // Adjust thresholds if using Celsius
+    if (isCelsius) {
+        excellentThreshold = (EXCELLENT_THRESHOLD - 32) * 5 / 9;
+        goodThreshold = (GOOD_THRESHOLD - 32) * 5 / 9;
     }
 
-    return { snowQuality, gaugeClass, gaugePercentage };
-}
+    if (wetBulb < excellentThreshold) {
+        snowQuality = "Excellent (Snowmaking Optimal)";
+    } else if (wetBulb < goodThreshold) {
+        snowQuality = "Poor (Snowmaking Possible)";
+    } else {
+        snowQuality = "Too Warm (Snowmaking Not Possible)";
+    }
 
-// Function to update the gauge display
-function updateGauge(gaugeClass, gaugePercentage) {
-    const gaugeValue = document.querySelector('.gauge-value');
-    const gaugeText = document.querySelector('.gauge-text');
-    gaugeValue.className = `gauge-value ${gaugeClass}`;
-    gaugeValue.style.strokeDasharray = `${gaugePercentage} 100`;
-    gaugeText.textContent = `${gaugePercentage}%`;
+    return { snowQuality };
 }
 
 function createSnowflakes() {
@@ -267,50 +250,34 @@ createSnowflakes();
 // Function to update the snow quality display
 function updateSnowQualityDisplay(snowQuality, wetBulb) {
     const snowQualityElement = document.getElementById('quality');
-    const snowIndicator = document.getElementById('snowIndicator');
     snowQualityElement.textContent = snowQuality;
     if (wetBulb < GOOD_THRESHOLD) {
-        snowIndicator.textContent = '❄️'; // Snowflake icon for possible snowmaking
+      //  snowIndicator.textContent = '❄️'; // Snowflake icon for possible snowmaking
     } else {
-        snowIndicator.textContent = `${(wetBulb - GOOD_THRESHOLD).toFixed(1)}° Too Warm`;
+      //  snowIndicator.textContent = `${(wetBulb - GOOD_THRESHOLD).toFixed(1)}° Too Warm`;
     }
-}
-
-// Function to calculate the wet bulb temperature
-function calculateWetBulb(temp, humidity) {
-    if (typeof temp !== 'number' || typeof humidity !== 'number' || temp < 0 || humidity < 0 || humidity > 100) {
-        throw new Error('Invalid input: Temperature and humidity must be numbers, and humidity must be between 0 and 100.');
-    }
-
-    // Simple formula for Wet Bulb approximation
-    return temp * Math.atan(0.151977 * Math.sqrt(humidity + 8.313659)) + Math.atan(temp + humidity) - Math.atan(humidity - 1.676331) + 0.00391838 * Math.pow(humidity, 1.5) * Math.atan(0.023101 * humidity) - 4.686035;
 }
 
 function updateForecast(daily) {
     const forecastContainer = document.getElementById('forecastContainer');
     forecastContainer.innerHTML = '';
 
-    daily.slice(0, 7).forEach(day => {
+    daily.temperature_2m_max.forEach((highTemp, index) => {
+        const lowTemp = daily.temperature_2m_min[index];
+        const avgTemp = (highTemp + lowTemp) / 2;
+        const wetBulb = calculateWetBulb(lowTemp, daily.humidity_2m ? daily.humidity_2m[index] : 50);
+        
         const dayEl = document.createElement('div');
-        const highTemp = day.temp.max;
-        const lowTemp = day.temp.min;
-        const wetBulb = calculateWetBulb((highTemp + lowTemp) / 2, day.humidity);
-        const tooWarm = wetBulb >= 28;
-
-        dayEl.className = tooWarm ? 'red' : wetBulb < 21 ? 'dark-blue' : 'light-blue';
+        dayEl.className = wetBulb < GOOD_THRESHOLD ? (wetBulb < EXCELLENT_THRESHOLD ? 'dark-blue' : 'light-blue') : 'red';
+        
         dayEl.innerHTML = `
-            <p>${new Date(day.dt * 1000).toLocaleDateString()}</p>
+            <p>${new Date(daily.time[index]).toLocaleDateString()}</p>
             <p>High: ${highTemp.toFixed(1)}°</p>
             <p>Low: ${lowTemp.toFixed(1)}°</p>
-            <p>${tooWarm ? `${(wetBulb - 28).toFixed(1)}° Too Warm` : '❄️ Snowmaking'}</p>
+            <p>${wetBulb < GOOD_THRESHOLD ? (wetBulb < EXCELLENT_THRESHOLD ? '❄️ Excellent (Snowmaking Optimal)' : '"Poor (Snowmaking Possible)') : `Too Warm (Snowmaking Not Possible)`}</p>
         `;
+
         forecastContainer.appendChild(dayEl);
     });
 }
 
-function toggleUnits() {
-    isCelsius = !isCelsius;
-    const lat = 34.0522; // Example coordinates (or use actual location data)
-    const lon = -118.2437;
-    fetchWeatherData(lat, lon);
-}

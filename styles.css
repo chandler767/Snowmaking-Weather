@@ -42,7 +42,7 @@ header {
 }
 
 #locationInput {
-    width: 70%;
+    width: 100%;
 }
 
 #suggestions {
@@ -228,8 +228,8 @@ header {
 }
 
 .light-blue { background-color: #add8e6; }
-.dark-blue { background-color: #00008b; }
-.red { background-color: #ffcccb; }
+.dark-blue { background-color: #00888b; }
+.red { background-color: #ffcccd; }
 
 
 /* Gauge styling */

@@ -18,9 +18,7 @@
             <h1>Snowmaking Weather Dashboard</h1>
             <div class="location-input">
                 <input type="text" id="locationInput" placeholder="Enter location or use GPS">
-                <button id="locationBtn">Use GPS</button>
                 <ul id="suggestions"></ul>
-                <button id="submitBtn">Submit</button>
             </div>
             <div class="unit-switch">
                 <label>
@@ -37,15 +35,6 @@
     <p>Humidity: <span id="humidity"></span></p>
     <p>Wet Bulb: <span id="wetBulb"></span></p>
     <p id="snowQuality">Snow Quality: <span id="quality"></span></p>
-    
-    <div id="snowQualityGauge" class="gauge">
-        <svg width="150" height="150" viewBox="0 0 42 42" class="circular-gauge">
-            <circle class="gauge-bg" cx="21" cy="21" r="15.915"></circle>
-            <circle class="gauge-value" cx="21" cy="21" r="15.915" stroke-dasharray="0 100"></circle>
-            <text x="50%" y="50%" text-anchor="middle" dy=".3em" class="gauge-text">0%</text>
-        </svg>
-        <div id="snowIndicator"></div>
-    </div>
 </section>
 
 
