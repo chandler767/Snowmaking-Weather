@@ -45,6 +45,9 @@ async function fetchWeatherByLocation() {
     }
 }
 
+// Call fetchWeatherByLocation on page load
+window.addEventListener('load', fetchWeatherByLocation);
+
 // Fetch weather data based on location input
 async function submitLocation() {
     const location = document.getElementById('locationInput').value;
@@ -211,6 +214,55 @@ function updateGauge(gaugeClass, gaugePercentage) {
     gaugeValue.style.strokeDasharray = `${gaugePercentage} 100`;
     gaugeText.textContent = `${gaugePercentage}%`;
 }
+
+function createSnowflakes() {
+    const snowflakeContainer = document.getElementById('snowflakeContainer');
+
+    // Remove any existing snowflakes
+    snowflakeContainer.innerHTML = '';
+
+    // Generate 6-10 snowflakes
+    const snowflakeCount = Math.floor(Math.random() * 4) + 6;
+
+    for (let i = 0; i < snowflakeCount; i++) {
+        const snowflake = document.createElement('div');
+        snowflake.classList.add('snowflake');
+
+        // Create inner div for rotation and sway animations
+        const snowflakeInner = document.createElement('div');
+        snowflakeInner.classList.add('snowflake-inner');
+
+        // Randomize position within the viewport
+        snowflake.style.left = `${Math.random() * 100}vw`;
+
+        // Randomize size
+        const sizeClass = ['size-small', 'size-medium', 'size-large'][Math.floor(Math.random() * 3)];
+        snowflake.classList.add(sizeClass);
+
+        // Randomize speed of falling
+        const speedClass = ['speed-slow', 'speed-medium', 'speed-fast'][Math.floor(Math.random() * 3)];
+        snowflake.classList.add(speedClass);
+
+        // Randomize animation delay for staggered start
+        const delayClass = `delay-${Math.floor(Math.random() * 7)}`; // 0 to 5 seconds
+        snowflake.classList.add(delayClass);
+
+        // Append inner div to outer snowflake div
+        snowflake.appendChild(snowflakeInner);
+
+        // Append snowflake to container
+        snowflakeContainer.appendChild(snowflake);
+
+        // Remove snowflake after animation ends to regenerate
+        snowflake.addEventListener('animationend', () => {
+            snowflake.remove();
+            createSnowflakes(); // Recursively create a new snowflake after one falls
+        });
+    }
+}
+
+// Initialize snowflakes
+createSnowflakes();
 
 // Function to update the snow quality display
 function updateSnowQualityDisplay(snowQuality, wetBulb) {

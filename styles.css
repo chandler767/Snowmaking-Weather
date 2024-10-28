@@ -109,24 +109,79 @@ header {
     transform: translateX(20px);
 }
 
-/* Snowflake Animation */
-body:before {
-    content: "";
+/* Snowflake container and styling */
+#snowflakeContainer {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     height: 100%;
     pointer-events: none;
-    background: url('snowflake.png') repeat;
-    animation: snowfall 15s linear infinite;
-    opacity: 0.5;
+    overflow: hidden;
+    z-index: 1; /* Behind main content */
 }
 
-@keyframes snowfall {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100%); }
+
+.snowflake {
+    position: absolute;
+    top: -50px; /* Start above the viewport */
+    animation: fall linear infinite;
+    animation-duration: 12s; /* Base duration, customized via speed classes */
 }
+
+/* Inner div controls sway and rotation */
+.snowflake-inner {
+    width: 100%;
+    height: 100%;
+    background-image: url('snowflake.png'); /* Replace with your snowflake image */
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.8;
+    animation: sway 3s ease-in-out infinite, rotate 6s linear infinite;
+}
+
+/* Sway animation for horizontal movement */
+@keyframes sway {
+    0% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    100% { transform: translateX(-10px); }
+}
+
+/* Rotation animation */
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Falling animation (outer div) */
+@keyframes fall {
+    0% {
+        transform: translateY(0);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(100vh);
+        opacity: 0.5;
+    }
+}
+
+/* Adjust size randomly within max 25x25 */
+.snowflake.size-small .snowflake-inner { width: 15px; height: 15px; }
+.snowflake.size-medium .snowflake-inner { width: 20px; height: 20px; }
+.snowflake.size-large .snowflake-inner { width: 25px; height: 25px; }
+
+/* Apply varying speeds to falling animation */
+.snowflake.speed-slow { animation-duration: 12s; }
+.snowflake.speed-medium { animation-duration: 10s; }
+.snowflake.speed-fast { animation-duration: 8s; }
+
+/* Random delay for staggered animation start */
+.snowflake.delay-0 { animation-delay: 0s; }
+.snowflake.delay-1 { animation-delay: 1s; }
+.snowflake.delay-2 { animation-delay: 2s; }
+.snowflake.delay-3 { animation-delay: 3s; }
+.snowflake.delay-4 { animation-delay: 4s; }
+.snowflake.delay-5 { animation-delay: 5s; }
 
 /* Error message banner */
 .error-message {
