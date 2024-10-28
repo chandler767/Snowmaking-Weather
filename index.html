@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snowmaking Weather Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Snowmaking Dashboard</h1>
+            <div class="location-input">
+                <input type="text" id="locationInput" placeholder="Enter location or use GPS">
+                <button id="locationBtn">Use GPS</button>
+                <ul id="suggestions"></ul>
+                <button id="submitBtn">Submit</button>
+            </div>
+            <div class="unit-switch">
+                <label>
+                    <input type="checkbox" id="unitSwitch">
+                    <span>°F / °C</span>
+                </label>
+            </div>
+        </header>
+        
+        <main>
+            <section id="currentConditions" class="card">
+                <h2>Current Conditions</h2>
+                <p>Temperature: <span id="temp"></span></p>
+                <p>Humidity: <span id="humidity"></span></p>
+                <p>Wet Bulb: <span id="wetBulb"></span></p>
+                <div id="snowQualityGauge">
+                    <p id="snowQuality">Snow Quality: <span id="quality"></span></p>
+                    <div id="snowIndicator"></div>
+                </div>
+            </section>
+
+            <section id="forecast" class="card">
+                <h2>7-Day Snowmaking Forecast</h2>
+                <div id="forecastContainer">
+                    <!-- Forecast days will be injected here by JavaScript -->
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
