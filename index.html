@@ -29,21 +29,72 @@
         </header>
         
         <main>
-            <section id="currentConditions" class="card">
+        <section id="loadingData" class="card">
+    <h2>Loading weather data...</h2>
+</section>
+            <section id="currentConditions" class="card" hidden>
     <h2>Current Conditions</h2>
     <p>Temperature: <span id="temp"></span></p>
     <p>Humidity: <span id="humidity"></span></p>
     <p>Wet Bulb: <span id="wetBulb"></span></p>
     <p id="snowQuality">Snow Quality: <span id="quality"></span></p>
 </section>
+<div class="view-switch" id="viewSwitch" hidden>
+    <div class="tabs">
+        <button id="dayForecastBtn" class="tab active">7-Day Forecast</button>
+        <button id="hourForecastBtn" class="tab">12-Hour Forecast</button>
+    </div>
+</div>
 
+<style>
+    .view-switch {
+        text-align: center;
+        margin-top: 20px;
+    }
 
-            <section id="forecast" class="card">
-                <h2>7-Day Snowmaking Forecast</h2>
-                <div id="forecastContainer">
-                    <!-- Forecast days will be injected here by JavaScript -->
-                </div>
-            </section>
+    .tabs {
+        display: inline-block;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .tab {
+        background-color: #f1f1f1;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+
+    .tab:hover {
+        background-color: #ddd;
+    }
+
+    .tab.active {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .tab:not(:last-child) {
+        border-right: 1px solid #ccc;
+    }
+</style>
+
+<section id="hourforecast" class="card" hidden>
+    <h2>12-Hour Snowmaking Forecast</h2>
+    <div id="12forecastContainer">
+        <!-- Forecast hours will be injected here by JavaScript -->
+    </div>
+</section>
+
+<section id="forecast" class="card" hidden>
+    <h2>7-Day Snowmaking Forecast</h2>
+    <div id="forecastContainer">
+        <!-- Forecast days will be injected here by JavaScript -->
+    </div>
+</section>
         </main>
     </div>
         <div id="snowflakeContainer"></div> <!-- Container for snowflakes -->

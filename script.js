@@ -1,6 +1,33 @@
 const OPEN_METEO_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
+function update12HourForecast(hourly) {
+    const forecastContainer = document.getElementById('12forecastContainer');
+    forecastContainer.innerHTML = '';
 
+    for (let i = 1; i < 13; i++) {
+        const hour = new Date();
+        hour.setHours(hour.getHours() + i);
+        const hourIndex = hour.getHours();
+        const temp = hourly.temperature_2m[hourIndex];
+        const humidity = hourly.relative_humidity_2m[hourIndex];
+        const wetBulb = calculateWetBulb(temp, humidity);
+
+        const hourEl = document.createElement('div');
+        hourEl.className = 'card';
+        hourEl.style.border = '5px solid';
+        hourEl.style.borderColor = wetBulb < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulb < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
+
+        hourEl.innerHTML = `
+            <h3>${hour.toLocaleTimeString([], { hour: 'numeric', hour12: true })}</h3>
+            <p>Temp: ${temp.toFixed(1)}°</p>
+            <p>Wet Bulb: ${wetBulb.toFixed(1)}°</p>
+            <p>Humidity: ${humidity}%</p>
+            <p>Snow Quality: ${wetBulb < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulb < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'Excellent (Snowmaking Optimal)' : 'Poor (Snowmaking Possible)') : 'Too Warm (Snowmaking Not Possible)'}</p>
+        `;
+
+        forecastContainer.appendChild(hourEl);
+    }
+}
 //document.getElementById('locationBtn').addEventListener('click', fetchWeatherByLocation);
 //document.getElementById('submitBtn').addEventListener('click', submitLocation);
 document.getElementById('unitSwitch').addEventListener('change', toggleUnits);
@@ -23,10 +50,26 @@ function displayError(message) {
     setTimeout(() => errorContainer.remove(), 5000);
 }
 
+document.getElementById('hourForecastBtn').addEventListener('click', function() {
+    document.getElementById('hourForecastBtn').classList.add('active');
+    document.getElementById('dayForecastBtn').classList.remove('active');
+    document.getElementById('forecast').style.display = 'none';
+    document.getElementById('hourforecast').style.display = 'block';
+});
+
+document.getElementById('dayForecastBtn').addEventListener('click', function() {
+     document.getElementById('hourForecastBtn').classList.remove('active');
+    document.getElementById('dayForecastBtn').classList.add('active');
+    document.getElementById('forecast').style.display = 'block';
+    document.getElementById('hourforecast').style.display = 'none';
+
+
+});
+
 // Fetch weather data based on latitude and longitude using Open-Meteo API
 async function fetchWeatherData(lat, lon) {
     try {
-        const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
+        const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
         
         if (!response.ok) {
             throw new Error(`Weather data fetch failed: ${response.status}`);
@@ -35,8 +78,13 @@ async function fetchWeatherData(lat, lon) {
         const data = await response.json();
 
         if (data.hourly && data.daily) {
+            document.getElementById('loadingData').style.display = 'none';
+            document.getElementById('currentConditions').style.display = 'block';
+            document.getElementById('forecast').style.display = 'block';
+            document.getElementById('viewSwitch').style.display = 'block';
             updateCurrentConditions(data.hourly, data.daily);
             updateForecast(data.daily);
+            update12HourForecast(data.hourly);
         } else {
             displayError("Weather data is unavailable.");
         }
@@ -64,6 +112,8 @@ function updateCurrentConditions(hourly, daily) {
     document.getElementById('temp').textContent = `${currentTemp.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
     document.getElementById('humidity').textContent = `${humidity}%`;
     document.getElementById('wetBulb').textContent = `${wetBulb.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
+    document.getElementById('currentConditions').style.border = '5px solid';
+    document.getElementById('currentConditions').style.borderColor = wetBulb < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulb < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
 
     updateSnowQuality(wetBulb);
 }
@@ -263,21 +313,41 @@ function updateForecast(daily) {
     forecastContainer.innerHTML = '';
 
     daily.temperature_2m_max.forEach((highTemp, index) => {
-        const lowTemp = daily.temperature_2m_min[index];
-        const avgTemp = (highTemp + lowTemp) / 2;
-        const wetBulb = calculateWetBulb(lowTemp, daily.humidity_2m ? daily.humidity_2m[index] : 50);
-        
+        const lowTemp = daily.temperature_2m_min[index]
+        const wetBulbDay = calculateWetBulb(highTemp, daily.relative_humidity_2m_max[index]);
+        const wetBulbNight = calculateWetBulb(lowTemp, daily.relative_humidity_2m_min[index]);
         const dayEl = document.createElement('div');
-        dayEl.className = wetBulb < GOOD_THRESHOLD ? (wetBulb < EXCELLENT_THRESHOLD ? 'dark-blue' : 'light-blue') : 'red';
+        dayEl.className = 'card';
+        dayEl.style.border = '5px solid';
+        dayEl.style.borderColor = wetBulbDay < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbDay < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
         
         dayEl.innerHTML = `
-            <p>${new Date(daily.time[index]).toLocaleDateString()}</p>
-            <p>High: ${highTemp.toFixed(1)}°</p>
-            <p>Low: ${lowTemp.toFixed(1)}°</p>
-            <p>${wetBulb < GOOD_THRESHOLD ? (wetBulb < EXCELLENT_THRESHOLD ? '❄️ Excellent (Snowmaking Optimal)' : '"Poor (Snowmaking Possible)') : `Too Warm (Snowmaking Not Possible)`}</p>
+            <h3>${new Date(daily.time[index]).toLocaleDateString()} (Day)</h3>
+            <p>High Temp: ${highTemp.toFixed(1)}°</p>
+            <p>Wet Bulb: ${wetBulbDay.toFixed(1)}°</p>
+            <p>Humidity: ${daily.relative_humidity_2m_max[index]}%</p>
+            <p>Snow Quality: ${wetBulbDay < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbDay < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'Excellent (Snowmaking Optimal)' : 'Poor (Snowmaking Possible)') : 'Too Warm (Snowmaking Not Possible)'}</p>
         `;
 
         forecastContainer.appendChild(dayEl);
+
+        const nightEl = document.createElement('div');
+        nightEl.className = 'card';
+        nightEl.style.border = '5px solid';
+        nightEl.style.borderColor = wetBulbNight < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbNight < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
+        nightEl.style.backgroundColor = '#f0f0f0';
+
+        nightEl.innerHTML = `
+            <h3>${new Date(daily.time[index]).toLocaleDateString()} (Night)</h3>
+            <p>Low Temp: ${lowTemp.toFixed(1)}°</p>
+            <p>Wet Bulb: ${wetBulbNight.toFixed(1)}°</p>
+            <p>Humidity: ${daily.relative_humidity_2m_min[index]}%</p>
+            <p>Snow Quality: ${wetBulbNight < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbNight < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'Excellent (Snowmaking Optimal)' : 'Poor (Snowmaking Possible)') : 'Too Warm (Snowmaking Not Possible)'}</p>
+        `;
+
+        forecastContainer.appendChild(nightEl);
+
+
     });
 }
 
