@@ -1,5 +1,16 @@
 const OPEN_METEO_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
+
+let isCelsius = document.getElementById('unitSwitch').checked;
+const EXCELLENT_THRESHOLD = 21;
+const GOOD_THRESHOLD = 28;
+
+document.getElementById('unitSwitch').addEventListener('change', toggleUnits);
+document.getElementById('locationInput').addEventListener('input', fetchLocationSuggestions);
+document.getElementById('hourForecastBtn').addEventListener('click', () => switchForecastView('hour'));
+document.getElementById('dayForecastBtn').addEventListener('click', () => switchForecastView('day'));
+window.addEventListener('load', fetchWeatherByLocation);
+
 function update12HourForecast(hourly) {
     const forecastContainer = document.getElementById('12forecastContainer');
     forecastContainer.innerHTML = '';
@@ -15,65 +26,52 @@ function update12HourForecast(hourly) {
         const hourEl = document.createElement('div');
         hourEl.className = 'card';
         hourEl.style.border = '5px solid';
-        hourEl.style.borderColor = wetBulb < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulb < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
+        hourEl.style.borderColor = getBorderColor(wetBulb);
 
         hourEl.innerHTML = `
             <h3>${hour.toLocaleTimeString([], { hour: 'numeric', hour12: true })}</h3>
             <p>Temp: ${temp.toFixed(1)}°</p>
             <p>Wet Bulb: ${wetBulb.toFixed(1)}°</p>
             <p>Humidity: ${humidity}%</p>
-            <p>Snow Quality: ${wetBulb < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulb < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'Excellent (Snowmaking Optimal)' : 'Poor (Snowmaking Possible)') : 'Too Warm (Snowmaking Not Possible)'}</p>
+            <p>Snow Quality: ${getSnowQuality(wetBulb)}</p>
         `;
 
         forecastContainer.appendChild(hourEl);
     }
 }
-//document.getElementById('locationBtn').addEventListener('click', fetchWeatherByLocation);
-//document.getElementById('submitBtn').addEventListener('click', submitLocation);
-document.getElementById('unitSwitch').addEventListener('change', toggleUnits);
-document.getElementById('locationInput').addEventListener('input', fetchLocationSuggestions);
 
-let isCelsius = document.getElementById('unitSwitch').checked;
-
-// Constants for snow quality thresholds and gauge percentages
-const EXCELLENT_THRESHOLD = 21;
-const GOOD_THRESHOLD = 28;
-
-// Display an error message to the user
 function displayError(message) {
     const errorContainer = document.createElement('div');
     errorContainer.textContent = message;
     errorContainer.className = 'error-message';
-    
-    // Append and automatically remove after 5 seconds
     document.body.prepend(errorContainer);
     setTimeout(() => errorContainer.remove(), 5000);
 }
 
-document.getElementById('hourForecastBtn').addEventListener('click', function() {
-    document.getElementById('hourForecastBtn').classList.add('active');
-    document.getElementById('dayForecastBtn').classList.remove('active');
-    document.getElementById('forecast').style.display = 'none';
-    document.getElementById('hourforecast').style.display = 'block';
-});
+function switchForecastView(view) {
+    const hourForecastBtn = document.getElementById('hourForecastBtn');
+    const dayForecastBtn = document.getElementById('dayForecastBtn');
+    const forecast = document.getElementById('forecast');
+    const hourforecast = document.getElementById('hourforecast');
 
-document.getElementById('dayForecastBtn').addEventListener('click', function() {
-     document.getElementById('hourForecastBtn').classList.remove('active');
-    document.getElementById('dayForecastBtn').classList.add('active');
-    document.getElementById('forecast').style.display = 'block';
-    document.getElementById('hourforecast').style.display = 'none';
+    if (view === 'hour') {
+        hourForecastBtn.classList.add('active');
+        dayForecastBtn.classList.remove('active');
+        forecast.style.display = 'none';
+        hourforecast.style.display = 'block';
+    } else {
+        hourForecastBtn.classList.remove('active');
+        dayForecastBtn.classList.add('active');
+        forecast.style.display = 'block';
+        hourforecast.style.display = 'none';
+    }
+}
 
-
-});
-
-// Fetch weather data based on latitude and longitude using Open-Meteo API
 async function fetchWeatherData(lat, lon) {
     try {
         const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
         
-        if (!response.ok) {
-            throw new Error(`Weather data fetch failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Weather data fetch failed: ${response.status}`);
 
         const data = await response.json();
 
@@ -82,6 +80,9 @@ async function fetchWeatherData(lat, lon) {
             document.getElementById('currentConditions').style.display = 'block';
             document.getElementById('forecast').style.display = 'block';
             document.getElementById('viewSwitch').style.display = 'block';
+            document.getElementById('hourForecastBtn').classList.remove('active');
+            document.getElementById('dayForecastBtn').classList.add('active');
+            document.getElementById('hourforecast').style.display = 'none';
             updateCurrentConditions(data.hourly, data.daily);
             updateForecast(data.daily);
             update12HourForecast(data.hourly);
@@ -94,18 +95,14 @@ async function fetchWeatherData(lat, lon) {
     }
 }
 
-// Toggle between Celsius and Fahrenheit
 function toggleUnits() {
     isCelsius = document.getElementById('unitSwitch').checked;
     const location = document.getElementById('locationInput').value;
-    if (location) {
-        submitLocation(); // Re-fetch data for the current location
-    }
+    if (location) submitLocation();
 }
 
-// Update Current Conditions
 function updateCurrentConditions(hourly, daily) {
-    const currentTemp = hourly.temperature_2m[new Date().getHours()]; // Get the temperature for the current hour
+    const currentTemp = hourly.temperature_2m[new Date().getHours()];
     const humidity = hourly.relative_humidity_2m[new Date().getHours()];
     const wetBulb = calculateWetBulb(currentTemp, humidity);
 
@@ -113,28 +110,22 @@ function updateCurrentConditions(hourly, daily) {
     document.getElementById('humidity').textContent = `${humidity}%`;
     document.getElementById('wetBulb').textContent = `${wetBulb.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
     document.getElementById('currentConditions').style.border = '5px solid';
-    document.getElementById('currentConditions').style.borderColor = wetBulb < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulb < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
+    document.getElementById('currentConditions').style.borderColor = getBorderColor(wetBulb);
 
     updateSnowQuality(wetBulb);
 }
 
-// Calculate Wet Bulb Temperature (approximation formula)
 function calculateWetBulb(temp, humidity) {
-    // Convert temperature to Celsius if it's in Fahrenheit
-    if (!isCelsius) {
-        temp = (temp - 32) * 5 / 9;
-    }
+    if (!isCelsius) temp = (temp - 32) * 5 / 9;
 
     const wetBulb = temp * Math.atan(0.151977 * Math.sqrt(humidity + 8.313659)) + Math.atan(temp + humidity) - Math.atan(humidity - 1.676331) + 0.00391838 * Math.pow(humidity, 1.5) * Math.atan(0.023101 * humidity) - 4.686035;
 
-    // Convert wet bulb temperature back to Fahrenheit if needed
     return isCelsius ? wetBulb : (wetBulb * 9 / 5) + 32;
 }
 
-// Fetch location suggestions using Nominatim API
 async function fetchLocationSuggestions() {
     const query = document.getElementById('locationInput').value;
-    if (query.length < 3) return; // Only fetch if query is longer than 2 characters
+    if (query.length < 3) return;
 
     try {
         const response = await fetch(`${NOMINATIM_BASE_URL}?q=${query}&format=json&addressdetails=1&limit=5`);
@@ -161,7 +152,6 @@ async function fetchLocationSuggestions() {
     }
 }
 
-// Fetch weather data based on location input using Nominatim for geocoding
 async function submitLocation() {
     const location = document.getElementById('locationInput').value;
     try {
@@ -181,7 +171,6 @@ async function submitLocation() {
     }
 }
 
-// Fetch weather data based on GPS location
 async function fetchWeatherByLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(async (position) => {
@@ -189,7 +178,6 @@ async function fetchWeatherByLocation() {
             const lon = position.coords.longitude;
             await fetchWeatherData(lat, lon);
 
-            // Fetch the nearest location name using Nominatim reverse geocoding
             try {
                 const response = await fetch(`${NOMINATIM_BASE_URL}?q=${lat},${lon}&format=json&addressdetails=1&limit=1`);
                 if (!response.ok) throw new Error("Reverse geocoding fetch failed");
@@ -214,97 +202,35 @@ async function fetchWeatherByLocation() {
     }
 }
 
-// Fetch weather data based on GPS location on page load
-window.addEventListener('load', fetchWeatherByLocation);
-
 function updateSnowQuality(wetBulb) {
     const snowQualityElement = document.getElementById('quality');
-
-    const { snowQuality } = determineSnowQuality(wetBulb);
-
-    updateSnowQualityDisplay(snowQuality, wetBulb);
+    const snowQuality = getSnowQuality(wetBulb);
+    snowQualityElement.textContent = snowQuality;
 }
 
-// Function to determine snow quality based on wet bulb temperature
-function determineSnowQuality(wetBulb) {
-    let snowQuality;
-    let excellentThreshold = EXCELLENT_THRESHOLD;
-    let goodThreshold = GOOD_THRESHOLD;
-
-    // Adjust thresholds if using Celsius
-    if (isCelsius) {
-        excellentThreshold = (EXCELLENT_THRESHOLD - 32) * 5 / 9;
-        goodThreshold = (GOOD_THRESHOLD - 32) * 5 / 9;
-    }
+function getSnowQuality(wetBulb) {
+    const excellentThreshold = isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD;
+    const goodThreshold = isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD;
 
     if (wetBulb < excellentThreshold) {
-        snowQuality = "Excellent (Snowmaking Optimal)";
+        return "Excellent (Snowmaking Optimal)";
     } else if (wetBulb < goodThreshold) {
-        snowQuality = "Poor (Snowmaking Possible)";
+        return "Poor (Snowmaking Possible)";
     } else {
-        snowQuality = "Too Warm (Snowmaking Not Possible)";
-    }
-
-    return { snowQuality };
-}
-
-function createSnowflakes() {
-    const snowflakeContainer = document.getElementById('snowflakeContainer');
-
-    // Remove any existing snowflakes
-    snowflakeContainer.innerHTML = '';
-
-    // Generate 6-10 snowflakes
-    const snowflakeCount = Math.floor(Math.random() * 4) + 6;
-
-    for (let i = 0; i < snowflakeCount; i++) {
-        const snowflake = document.createElement('div');
-        snowflake.classList.add('snowflake');
-
-        // Create inner div for rotation and sway animations
-        const snowflakeInner = document.createElement('div');
-        snowflakeInner.classList.add('snowflake-inner');
-
-        // Randomize position within the viewport
-        snowflake.style.left = `${Math.random() * 100}vw`;
-
-        // Randomize size
-        const sizeClass = ['size-small', 'size-medium', 'size-large'][Math.floor(Math.random() * 3)];
-        snowflake.classList.add(sizeClass);
-
-        // Randomize speed of falling
-        const speedClass = ['speed-slow', 'speed-medium', 'speed-fast'][Math.floor(Math.random() * 3)];
-        snowflake.classList.add(speedClass);
-
-        // Randomize animation delay for staggered start
-        const delayClass = `delay-${Math.floor(Math.random() * 7)}`; // 0 to 5 seconds
-        snowflake.classList.add(delayClass);
-
-        // Append inner div to outer snowflake div
-        snowflake.appendChild(snowflakeInner);
-
-        // Append snowflake to container
-        snowflakeContainer.appendChild(snowflake);
-
-        // Remove snowflake after animation ends to regenerate
-        snowflake.addEventListener('animationend', () => {
-            snowflake.remove();
-            createSnowflakes(); // Recursively create a new snowflake after one falls
-        });
+        return "Too Warm (Snowmaking Not Possible)";
     }
 }
 
-// Initialize snowflakes
-createSnowflakes();
+function getBorderColor(wetBulb) {
+    const excellentThreshold = isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD;
+    const goodThreshold = isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD;
 
-// Function to update the snow quality display
-function updateSnowQualityDisplay(snowQuality, wetBulb) {
-    const snowQualityElement = document.getElementById('quality');
-    snowQualityElement.textContent = snowQuality;
-    if (wetBulb < GOOD_THRESHOLD) {
-      //  snowIndicator.textContent = '❄️'; // Snowflake icon for possible snowmaking
+    if (wetBulb < excellentThreshold) {
+        return 'blue';
+    } else if (wetBulb < goodThreshold) {
+        return 'lightblue';
     } else {
-      //  snowIndicator.textContent = `${(wetBulb - GOOD_THRESHOLD).toFixed(1)}° Too Warm`;
+        return 'red';
     }
 }
 
@@ -313,41 +239,68 @@ function updateForecast(daily) {
     forecastContainer.innerHTML = '';
 
     daily.temperature_2m_max.forEach((highTemp, index) => {
-        const lowTemp = daily.temperature_2m_min[index]
+        const lowTemp = daily.temperature_2m_min[index];
         const wetBulbDay = calculateWetBulb(highTemp, daily.relative_humidity_2m_max[index]);
         const wetBulbNight = calculateWetBulb(lowTemp, daily.relative_humidity_2m_min[index]);
-        const dayEl = document.createElement('div');
-        dayEl.className = 'card';
-        dayEl.style.border = '5px solid';
-        dayEl.style.borderColor = wetBulbDay < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbDay < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
-        
-        dayEl.innerHTML = `
-            <h3>${new Date(daily.time[index]).toLocaleDateString()} (Day)</h3>
-            <p>High Temp: ${highTemp.toFixed(1)}°</p>
-            <p>Wet Bulb: ${wetBulbDay.toFixed(1)}°</p>
-            <p>Humidity: ${daily.relative_humidity_2m_max[index]}%</p>
-            <p>Snow Quality: ${wetBulbDay < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbDay < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'Excellent (Snowmaking Optimal)' : 'Poor (Snowmaking Possible)') : 'Too Warm (Snowmaking Not Possible)'}</p>
-        `;
+
+        const dayEl = createForecastCard(daily.time[index], 'Day', highTemp, wetBulbDay, daily.relative_humidity_2m_max[index]);
+        const nightEl = createForecastCard(daily.time[index], 'Night', lowTemp, wetBulbNight, daily.relative_humidity_2m_min[index], true);
 
         forecastContainer.appendChild(dayEl);
-
-        const nightEl = document.createElement('div');
-        nightEl.className = 'card';
-        nightEl.style.border = '5px solid';
-        nightEl.style.borderColor = wetBulbNight < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbNight < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'blue' : 'lightblue') : 'red';
-        nightEl.style.backgroundColor = '#f0f0f0';
-
-        nightEl.innerHTML = `
-            <h3>${new Date(daily.time[index]).toLocaleDateString()} (Night)</h3>
-            <p>Low Temp: ${lowTemp.toFixed(1)}°</p>
-            <p>Wet Bulb: ${wetBulbNight.toFixed(1)}°</p>
-            <p>Humidity: ${daily.relative_humidity_2m_min[index]}%</p>
-            <p>Snow Quality: ${wetBulbNight < (isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD) ? (wetBulbNight < (isCelsius ? (EXCELLENT_THRESHOLD - 32) * 5 / 9 : EXCELLENT_THRESHOLD) ? 'Excellent (Snowmaking Optimal)' : 'Poor (Snowmaking Possible)') : 'Too Warm (Snowmaking Not Possible)'}</p>
-        `;
-
         forecastContainer.appendChild(nightEl);
-
-
     });
 }
 
+function createForecastCard(date, period, temp, wetBulb, humidity, isNight = false) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.border = '5px solid';
+    card.style.borderColor = getBorderColor(wetBulb);
+    if (isNight) card.style.backgroundColor = '#f0f0f0';
+
+    card.innerHTML = `
+        <h3>${new Date(date).toLocaleDateString()} (${period})</h3>
+        <p>${period === 'Day' ? 'High' : 'Low'} Temp: ${temp.toFixed(1)}°</p>
+        <p>Wet Bulb: ${wetBulb.toFixed(1)}°</p>
+        <p>Humidity: ${humidity}%</p>
+        <p>Snow Quality: ${getSnowQuality(wetBulb)}</p>
+    `;
+
+    return card;
+}
+
+function createSnowflakes() {
+    const snowflakeContainer = document.getElementById('snowflakeContainer');
+    snowflakeContainer.innerHTML = '';
+
+    const snowflakeCount = Math.floor(Math.random() * 4) + 6;
+
+    for (let i = 0; i < snowflakeCount; i++) {
+        const snowflake = document.createElement('div');
+        snowflake.classList.add('snowflake');
+
+        const snowflakeInner = document.createElement('div');
+        snowflakeInner.classList.add('snowflake-inner');
+
+        snowflake.style.left = `${Math.random() * 100}vw`;
+
+        const sizeClass = ['size-small', 'size-medium', 'size-large'][Math.floor(Math.random() * 3)];
+        snowflake.classList.add(sizeClass);
+
+        const speedClass = ['speed-slow', 'speed-medium', 'speed-fast'][Math.floor(Math.random() * 3)];
+        snowflake.classList.add(speedClass);
+
+        const delayClass = `delay-${Math.floor(Math.random() * 7)}`;
+        snowflake.classList.add(delayClass);
+
+        snowflake.appendChild(snowflakeInner);
+        snowflakeContainer.appendChild(snowflake);
+
+        snowflake.addEventListener('animationend', () => {
+            snowflake.remove();
+            createSnowflakes();
+        });
+    }
+}
+
+createSnowflakes();
