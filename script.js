@@ -70,7 +70,7 @@ function switchForecastView(view) {
 async function fetchWeatherData(lat, lon) {
     try {
         const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
-        
+
         if (!response.ok) throw new Error(`Weather data fetch failed: ${response.status}`);
 
         const data = await response.json();
@@ -80,6 +80,7 @@ async function fetchWeatherData(lat, lon) {
             document.getElementById('currentConditions').style.display = 'block';
             document.getElementById('forecast').style.display = 'block';
             document.getElementById('viewSwitch').style.display = 'block';
+            document.getElementById('footer').style.display = 'block';
             document.getElementById('hourForecastBtn').classList.remove('active');
             document.getElementById('dayForecastBtn').classList.add('active');
             document.getElementById('hourforecast').style.display = 'none';

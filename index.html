@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-      <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 
     <link rel="manifest" href="site.webmanifest">
 
     <title>Snowmaking Weather Dashboard</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div id="app">
         <header>
-            <img src="https://backyardsnowstorm.com/wp-content/uploads/2022/03/BYSS-Logo-V5-e1687370884510.png" alt="BYSS Logo" style="max-width: 100%;">
+            <a href="https://backyardsnowstorm.com/" target="_blank">
+                <img src="https://backyardsnowstorm.com/wp-content/uploads/2022/03/BYSS-Logo-V5-e1687370884510.png"
+                    alt="BYSS Logo" style="max-width: 100%;">
+            </a>
             <h1>Snowmaking Weather Dashboard</h1>
             <div class="location-input">
                 <input type="text" id="locationInput" placeholder="Enter location or use GPS">
@@ -27,77 +32,44 @@
                 </label>
             </div>
         </header>
-        
+
         <main>
-        <section id="loadingData" class="card">
-    <h2>Loading weather data...</h2>
-</section>
+            <section id="loadingData" class="card">
+                <h2>Loading weather data...</h2>
+            </section>
             <section id="currentConditions" class="card" hidden>
-    <h2>Current Conditions</h2>
-    <p>Temperature: <span id="temp"></span></p>
-    <p>Humidity: <span id="humidity"></span></p>
-    <p>Wet Bulb: <span id="wetBulb"></span></p>
-    <p id="snowQuality">Snow Quality: <span id="quality"></span></p>
-</section>
-<div class="view-switch" id="viewSwitch" hidden>
-    <div class="tabs">
-        <button id="dayForecastBtn" class="tab active">7-Day Forecast</button>
-        <button id="hourForecastBtn" class="tab">12-Hour Forecast</button>
-    </div>
-</div>
+                <h2>Current Conditions</h2>
+                <p>Temperature: <span id="temp"></span></p>
+                <p>Humidity: <span id="humidity"></span></p>
+                <p>Wet Bulb: <span id="wetBulb"></span></p>
+                <p id="snowQuality">Snow Quality: <span id="quality"></span></p>
+            </section>
+            <div class="view-switch" id="viewSwitch" hidden>
+                <div class="tabs">
+                    <button id="dayForecastBtn" class="tab active">7-Day Forecast</button>
+                    <button id="hourForecastBtn" class="tab">12-Hour Forecast</button>
+                </div>
+            </div>
 
-<style>
-    .view-switch {
-        text-align: center;
-        margin-top: 20px;
-    }
-
-    .tabs {
-        display: inline-block;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        overflow: hidden;
-    }
-
-    .tab {
-        background-color: #f1f1f1;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background-color 0.3s;
-    }
-
-    .tab:hover {
-        background-color: #ddd;
-    }
-
-    .tab.active {
-        background-color: #007bff;
-        color: white;
-    }
-
-    .tab:not(:last-child) {
-        border-right: 1px solid #ccc;
-    }
-</style>
-
-<section id="hourforecast" class="card" hidden>
-    <h2>12-Hour Snowmaking Forecast</h2>
-    <div id="12forecastContainer">
-        <!-- Forecast hours will be injected here by JavaScript -->
-    </div>
-</section>
-
-<section id="forecast" class="card" hidden>
-    <h2>7-Day Snowmaking Forecast</h2>
-    <div id="forecastContainer">
-        <!-- Forecast days will be injected here by JavaScript -->
-    </div>
-</section>
+            <section id="hourforecast" class="card" hidden>
+                <h2>12-Hour Snowmaking Forecast</h2>
+                <div id="12forecastContainer">
+                    <!-- Forecast hours will be injected here by JavaScript -->
+                </div>
+            </section>
+            <section id="forecast" class="card" hidden>
+                <h2>7-Day Snowmaking Forecast</h2>
+                <div id="forecastContainer">
+                    <!-- Forecast days will be injected here by JavaScript -->
+                </div>
+            </section>
+            <footer id="footer" hidden>
+                <p>V1.0 for the 2024/25 season | Made with ❤️ by <a href="http://chandlermayo.com" target="_blank">Chandler Mayo</a></p>
+            </footer>
         </main>
     </div>
-        <div id="snowflakeContainer"></div> <!-- Container for snowflakes -->
+    <div id="snowflakeContainer"></div> <!-- Container for snowflakes -->
     <script src="script.js"></script>
 </body>
+
 </html>
