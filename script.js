@@ -68,6 +68,11 @@ function switchForecastView(view) {
 }
 
 async function fetchWeatherData(lat, lon) {
+    document.getElementById('loadingData').style.display = 'block';
+    document.getElementById('currentConditions').style.display = 'none';
+    document.getElementById('forecast').style.display = 'none';
+    document.getElementById('viewSwitch').style.display = 'none';
+    document.getElementById('footer').style.display = 'none';
     try {
         const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
 
