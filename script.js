@@ -30,8 +30,8 @@ function update12HourForecast(hourly) {
 
         hourEl.innerHTML = `
             <h3>${hour.toLocaleTimeString([], { hour: 'numeric', hour12: true })}</h3>
-            <p>Temp: ${temp.toFixed(1)}°</p>
-            <p>Wet Bulb: ${wetBulb.toFixed(1)}°</p>
+            <p>Temp: ${temp.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
+            <p>Wet Bulb: ${wetBulb.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
             <p>Humidity: ${humidity}%</p>
             <p>Snow Quality: ${getSnowQuality(wetBulb)}</p>
         `;
@@ -112,9 +112,9 @@ function updateCurrentConditions(hourly, daily) {
     const humidity = hourly.relative_humidity_2m[new Date().getHours()];
     const wetBulb = calculateWetBulb(currentTemp, humidity);
 
-    document.getElementById('temp').textContent = `${currentTemp.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
+    document.getElementById('temp').textContent = `${currentTemp.toFixed(1)}°${isCelsius ? 'C' : 'F'}`;
     document.getElementById('humidity').textContent = `${humidity}%`;
-    document.getElementById('wetBulb').textContent = `${wetBulb.toFixed(1)} °${isCelsius ? 'C' : 'F'}`;
+    document.getElementById('wetBulb').textContent = `${wetBulb.toFixed(1)}°${isCelsius ? 'C' : 'F'}`;
     document.getElementById('currentConditions').style.border = '5px solid';
     document.getElementById('currentConditions').style.borderColor = getBorderColor(wetBulb);
 
@@ -266,8 +266,8 @@ function createForecastCard(date, period, temp, wetBulb, humidity, isNight = fal
 
     card.innerHTML = `
         <h3>${new Date(date).toLocaleDateString()} (${period})</h3>
-        <p>${period === 'Day' ? 'High' : 'Low'} Temp: ${temp.toFixed(1)}°</p>
-        <p>Wet Bulb: ${wetBulb.toFixed(1)}°</p>
+        <p>${period === 'Day' ? 'High' : 'Low'} Temp: ${temp.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
+        <p>Wet Bulb: ${wetBulb.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
         <p>Humidity: ${humidity}%</p>
         <p>Snow Quality: ${getSnowQuality(wetBulb)}</p>
     `;
