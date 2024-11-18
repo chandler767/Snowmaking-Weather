@@ -74,7 +74,9 @@ async function fetchWeatherData(lat, lon) {
     document.getElementById('viewSwitch').style.display = 'none';
     document.getElementById('footer').style.display = 'none';
     try {
-        const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
+        console.log(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max,precipitation_probability_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
+
+        const response = await fetch(`${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_min,relative_humidity_2m_max,precipitation_probability_max&temperature_unit=${isCelsius ? 'celsius' : 'fahrenheit'}&timezone=auto`);
 
         if (!response.ok) throw new Error(`Weather data fetch failed: ${response.status}`);
 
@@ -263,9 +265,8 @@ function createForecastCard(date, period, temp, wetBulb, humidity, isNight = fal
     card.style.border = '5px solid';
     card.style.borderColor = getBorderColor(wetBulb);
     if (isNight) card.style.backgroundColor = '#f0f0f0';
-
     card.innerHTML = `
-        <h3>${new Date(date).toLocaleDateString()} (${period})</h3>
+        <h3>${date} (${period})</h3>
         <p>${period === 'Day' ? 'High' : 'Low'} Temp: ${temp.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
         <p>Wet Bulb: ${wetBulb.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
         <p>Humidity: ${humidity}%</p>
