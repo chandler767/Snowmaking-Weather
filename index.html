@@ -19,17 +19,17 @@
 <body>
     <div id="app">
         <header>
-            <a href="https://backyardsnowstorm.com/" target="_blank">
-                <img src="https://backyardsnowstorm.com/wp-content/uploads/2022/03/BYSS-Logo-V5-e1687370884510.png"
-                    alt="BYSS Logo" style="max-width: 100%;">
+            <a href="https://www.beechmountainresort.com/" target="_blank">
+                <img src="https://www.beechmountainresort.com/wp-content/uploads/2024/04/logo-2019.png"
+                    alt="Beech Mountain Resort Logo" style="max-width: 100%;">
             </a>
             <h1>Can Beech Mountain Resort make snow?</h1>
             <div class="location-input">
-                <input type="text" id="locationInput" placeholder="Enter location or use GPS" disabled>
+                <input type="text" id="locationInput" placeholder="Enter location or use GPS" value="Beech Mountain Resort - 1007 Beech Mountain Parkway, Beech Mountain, NC, 28604" disabled>
                 <ul id="suggestions"></ul>
             </div>
-            <div class="unit-switch">
-                <label>
+            <div class="unit-switch" hidden>
+                <labe hidden>
                     <input type="checkbox" id="unitSwitch">
                     <span>°F / °C</span>
                 </label>
@@ -45,7 +45,8 @@
                 <p>Temperature: <span id="temp"></span></p>
                 <p>Wet Bulb: <span id="wetBulb"></span></p>
                 <p>Humidity: <span id="humidity"></span></p>
-                <p id="snowQuality">Snow Quality: <span id="quality"></span></p>
+                <p id="snowQuality">Snowmaking Quality: <span id="quality"></span></p>
+                <p id="snowNotes">Notes: <span id="notes"></span></p>
             </section>
             <div class="view-switch" id="viewSwitch" hidden>
                 <div class="tabs">
@@ -67,6 +68,7 @@
                 </div>
             </section>
             <footer id="footer" hidden>
+                <small>This site is not affiliated with Beech Mountain Resort</small>
                 <p>V1.0 for the 2024/25 season | Made with ❤️ by <a href="http://chandlermayo.com" target="_blank">Chandler Mayo</a></p>
             </footer>
         </main>
