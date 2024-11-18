@@ -33,7 +33,7 @@ function update12HourForecast(hourly) {
             <p>Temp: ${temp.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
             <p>Wet Bulb: ${wetBulb.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
             <p>Humidity: ${humidity}%</p>
-            <p>Snow Quality: ${getSnowQuality(wetBulb)}</p>
+            <p>Snowmaking Quality: ${getSnowQuality(wetBulb)}</p>
         `;
 
         forecastContainer.appendChild(hourEl);
@@ -221,11 +221,11 @@ function getSnowQuality(wetBulb) {
     const goodThreshold = isCelsius ? (GOOD_THRESHOLD - 32) * 5 / 9 : GOOD_THRESHOLD;
 
     if (wetBulb < excellentThreshold) {
-        return "Excellent (Snowmaking Optimal)";
+        return "Dry Snow (Snowmaking Optimal)";
     } else if (wetBulb < goodThreshold) {
-        return "Poor (Snowmaking Possible)";
+        return "Wet Snow (Snowmaking Possible)";
     } else {
-        return "Too Warm (Snowmaking Not Possible)";
+        return "NA (Snowmaking Not Possible)";
     }
 }
 
@@ -270,7 +270,7 @@ function createForecastCard(date, period, temp, wetBulb, humidity, isNight = fal
         <p>${period === 'Day' ? 'High' : 'Low'} Temp: ${temp.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
         <p>Wet Bulb: ${wetBulb.toFixed(1)}°${isCelsius ? 'C' : 'F'}</p>
         <p>Humidity: ${humidity}%</p>
-        <p>Snow Quality: ${getSnowQuality(wetBulb)}</p>
+        <p>Snowmaking Quality: ${getSnowQuality(wetBulb)}</p>
     `;
 
     return card;
